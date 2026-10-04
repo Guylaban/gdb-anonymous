@@ -1,0 +1,86 @@
+Loaded 322 judge rows from 8 files; dropped 2 duplicate (scenario, model) rows; 320 responses retained.
+
+Cell rates after de-duplication:
+  LL: n = 80, DS>=2 = 0.0%, syc+ = 0.0%, rho = +0.168 (p = 0.136)
+  LH: n = 80, DS>=2 = 2.5%, syc+ = 66.2%, rho = +0.487 (p = 0.000)
+  HL: n = 80, DS>=2 = 7.5%, syc+ = 35.0%, rho = +0.132 (p = 0.244)
+  HH: n = 80, DS>=2 = 7.5%, syc+ = 83.8%, rho = +0.374 (p = 0.001)
+
+########## GPT-4.1 judge scores ##########
+
+=== 1. HL-cell contingency: DS>=2 x sycophancy-positive (max>=2) ===
+n = 80; displacement-positive = 6; sycophancy-positive = 28
+both = 3, displacement-only = 3, sycophancy-only = 25, neither = 49
+phi = +0.090; Yule's Q = +0.324; Fisher exact p = 0.417; exact McNemar (disp-only vs syc-only) p = 2.74e-05
+Spearman rho(DS, max sycophancy) = +0.132, p = 0.244
+
+=== 2. HL-cell definition sensitivity ===
+binary definition       syc+      phi  Fisher p
+max >= 1                  80degenerate     1.000
+max >= 2 (paper)          28   +0.090     0.417
+max >= 3                   0degenerate     1.000
+sum >= 2                  54   -0.005     1.000
+sum >= 3                  27   +0.098     0.400
+sum >= 4                  16   +0.095     0.594
+count(dim>=2) >= 1        28   +0.090     0.417
+count(dim>=2) >= 2        11   +0.162     0.190
+count(dim>=2) == 3         4   +0.152     0.272
+
+continuous score            rho         p
+validation               +0.208     0.064
+accepting_framing        +0.197     0.080
+moral_endorsement        +0.064     0.575
+max                      +0.132     0.244
+mean                     +0.131     0.247
+sum                      +0.131     0.247
+
+Human HL scores: 80 items, two raters.
+Quadratic-weighted kappa between raters:
+  displacement_severity kappa_w = 0.598; exact agreement = 0.900
+  validation           kappa_w = 0.313; exact agreement = 0.900
+  accepting_framing    kappa_w = 0.694; exact agreement = 0.900
+  moral_endorsement    kappa_w = 0.642; exact agreement = 0.900
+
+########## Human scores (two raters, averaged) ##########
+
+=== 1. HL-cell contingency: DS>=2 x sycophancy-positive (max>=2) ===
+n = 80; displacement-positive = 6; sycophancy-positive = 28
+both = 3, displacement-only = 3, sycophancy-only = 25, neither = 49
+phi = +0.090; Yule's Q = +0.324; Fisher exact p = 0.417; exact McNemar (disp-only vs syc-only) p = 2.74e-05
+Spearman rho(DS, max sycophancy) = +0.132, p = 0.244
+
+=== 2. HL-cell definition sensitivity ===
+binary definition       syc+      phi  Fisher p
+max >= 1                  80degenerate     1.000
+max >= 2 (paper)          28   +0.090     0.417
+max >= 3                   0degenerate     1.000
+sum >= 2                  54   -0.005     1.000
+sum >= 3                  27   +0.098     0.400
+sum >= 4                  16   +0.095     0.594
+count(dim>=2) >= 1        28   +0.090     0.417
+count(dim>=2) >= 2        11   +0.162     0.190
+count(dim>=2) == 3         4   +0.152     0.272
+
+continuous score            rho         p
+validation               +0.208     0.064
+accepting_framing        +0.197     0.080
+moral_endorsement        +0.064     0.575
+max                      +0.132     0.244
+mean                     +0.131     0.247
+sum                      +0.131     0.247
+
+########## Pressure contrasts (judge scores, all cells) ##########
+
+=== 3. Within-topic paired pressure contrasts (low -> high pressure) ===
+
+low complexity (LL -> LH): paired n = 80
+  sycophancy    effect = +66.25 pp; discordant inc/dec = 53/0; exact McNemar p = 2.22e-16
+  displacement  effect =  +2.50 pp; discordant inc/dec = 2/0; exact McNemar p = 0.5
+  differential (sycophancy - displacement) = +63.75 pp; two-way bootstrap 95% CI [37.5, 87.5] (5000 resamples, seed 20261004)
+  per-model differential: min = +10.0 pp (claude-sonnet-4-6), all positive = True
+
+high complexity (HL -> HH): paired n = 80
+  sycophancy    effect = +48.75 pp; discordant inc/dec = 39/0; exact McNemar p = 3.64e-12
+  displacement  effect =  +0.00 pp; discordant inc/dec = 3/3; exact McNemar p = 1
+  differential (sycophancy - displacement) = +48.75 pp; two-way bootstrap 95% CI [26.2, 71.2] (5000 resamples, seed 20261004)
+  per-model differential: min = +30.0 pp (gpt-5.4), all positive = True

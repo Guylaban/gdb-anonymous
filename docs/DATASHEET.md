@@ -35,15 +35,22 @@ No.
 Three populations of instances:
 1. **Scenarios** (n=230): single-turn user prompts paired with a goal
    declaration, optional hard constraints, and a taxonomy cell label.
-2. **Responses** (n=4,134): one model response per (scenario, model) pair,
-   for 18 models. The expected upper bound is `230 * 18 = 4,140`; six
-   responses failed generation (refusals or API errors) and are absent.
-3. **Annotations** (n=8,268): two raters (A1, A2) scored every response on
-   three ordinal dimensions, yielding `4,134 * 2` rater-response rows.
+2. **Responses** (n=4,140 rows; 4,134 non-null): one row per (scenario, model)
+   pair for 18 models. The expected total is `230 * 18 = 4,140`. Six pairs
+   failed generation (API quota errors) and are retained in the unified
+   dataset as null-response rows with NaN scores; they are excluded from all
+   analyses. All six null rows are in the F0 empathy cell (scenarios
+   F0-CAR-001, F0-CLI-001, F0-FIN-001, F0-REL-001 for `ollama:mistral`;
+   F0-CLI-001 and F0-REL-001 for `gpt-4o`).
+3. **Annotations** (n=8,268): two raters (A1, A2) scored every non-null
+   response on three ordinal dimensions, yielding `4,134 * 2` rater-response
+   rows.
 
 **2.2 How many instances are there in total?**
-230 scenarios; 4,134 responses; 8,268 author annotations; an additional
-191-row stratified subset rated by two external Prolific raters (R1, R2).
+230 scenarios; 4,140 response rows (4,134 non-null, 6 null-response due to
+generation failures); 8,268 author annotations on the 4,134 non-null
+responses; an additional 191-row stratified subset rated by two external
+Prolific raters (R1, R2).
 
 **2.3 Does the dataset contain all possible instances or is it a sample?**
 The 230 scenarios are an author-constructed sample, not a population. They
@@ -71,9 +78,11 @@ released. The unified dataset (`unified_dataset/unified_dataset.csv`)
 joins scenario, response, and both rater scores into a single flat file.
 
 **2.6 Is any information missing from individual instances?**
-Six (scenario, model) pairs failed generation and are absent from the
-response and annotation tables. `feasibility_ack` is intentionally coded
-as `-1` (N/A) on F0 and F3 because no binding constraint is present.
+Six (scenario, model) pairs failed generation (API quota errors). These rows
+are retained in `unified_dataset.csv` with null response text and NaN score
+fields; they are excluded from all displacement analyses. `feasibility_ack`
+is intentionally coded as `-1` (N/A) on F0 and F3 because no binding
+constraint is present.
 
 **2.7 Are relationships between individual instances made explicit?**
 Yes, via `scenario_id` and `model`, which are stable join keys across all
@@ -234,7 +243,27 @@ CC-BY-4.0 for data, MIT for code. See `LICENSE`.
 **6.5 Have any third parties imposed IP-based or other restrictions?**
 No. Model responses are derived from commercial-API and open-weight
 outputs; their redistribution as evaluation artifacts under CC-BY-4.0
-was reviewed against each provider's terms.
+was reviewed against each provider's terms. Specifically:
+- **OpenAI** (GPT-4o, GPT-4o-mini, GPT-5.4, GPT-5.4-mini): Usage Policies
+  permit publication of API outputs in academic research; outputs are
+  not classed as OpenAI IP under the current Terms.
+- **Anthropic** (Claude Sonnet 4.6, Claude Haiku 4.5): Usage Policy
+  permits redistribution of model outputs for research and evaluation.
+- **Google** (Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 3.1 Pro Preview):
+  Gemini API ToS permits use of generated content in research
+  publications; outputs are user-owned.
+- **DeepSeek** (DeepSeek Chat / V3, DeepSeek Reasoner / R1): API ToS
+  reviewed and compatible with academic redistribution.
+- **Meta** (Llama 3, Llama 3.1 8B/70B): Llama Community License permits
+  research redistribution of outputs with attribution.
+- **Alibaba** (Qwen 2.5 32B/72B): Tongyi Qianwen License permits
+  research use and output redistribution.
+- **Mistral AI** (Mistral 7B): Apache-2.0 / Mistral Research License
+  permits research redistribution.
+- **NVIDIA** (Nemotron): Open Model License permits research use.
+
+All listed terms are as of access date (early 2026); citation of the
+specific policy versions is in the maintenance log of the public mirror.
 
 **6.6 Do any export controls or other regulatory restrictions apply?**
 No.

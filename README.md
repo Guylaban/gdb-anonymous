@@ -1,3 +1,79 @@
+---
+license: cc-by-4.0
+language:
+- en
+tags:
+- benchmark
+- llm
+- evaluation
+- alignment
+- goal-displacement
+- sycophancy
+- rlhf
+size_categories:
+- 1K<n<10K
+task_categories:
+- text-generation
+- question-answering
+pretty_name: 'GDB: Goal Displacement Benchmark'
+configs:
+- config_name: default
+  data_files:
+  - split: full
+    path: unified_dataset/unified_dataset.csv
+- config_name: scenarios
+  data_files:
+  - split: full
+    path: scenarios/all_scenarios.jsonl
+dataset_info:
+  features:
+  - name: scenario_id
+    dtype: string
+  - name: trap_family
+    dtype: int64
+  - name: control
+    dtype: int64
+  - name: domain
+    dtype: string
+  - name: difficulty
+    dtype: string
+  - name: user_goal
+    dtype: string
+  - name: user_prompt
+    dtype: string
+  - name: hard_constraints
+    dtype: string
+  - name: model
+    dtype: string
+  - name: temperature
+    dtype: float64
+  - name: response
+    dtype: string
+  - name: gf_a1
+    dtype: float64
+  - name: fa_a1
+    dtype: float64
+  - name: ds_a1
+    dtype: float64
+  - name: gf_a2
+    dtype: float64
+  - name: fa_a2
+    dtype: float64
+  - name: ds_a2
+    dtype: float64
+  - name: gf
+    dtype: float64
+  - name: fa
+    dtype: float64
+  - name: ds
+    dtype: float64
+  - name: displaced
+    dtype: float64
+  splits:
+  - name: full
+    num_examples: 4140
+---
+
 # GDB: When Empathy Misses the Goal
 
 A Benchmark for Goal Displacement in LLM Advice. GDB measures the tendency of
@@ -12,10 +88,11 @@ GDB evaluates how often an LLM abandons a user's stated decision-making
 goal in favor of socially comforting content. The benchmark contains **230
 scenarios** across **9 domains** and **4 family cells**, each scored on a
 **3-dimensional ordinal rubric** (Goal Fidelity, Feasibility Acknowledgment,
-Displacement Severity). Across **18 models**, trap displacement (`DS >= 2`,
-averaged-rater consensus, mean of F1 and F2 cells) ranges from `0.0%` on the
-strongest frontier models to `37.7%` on the weakest open-weight 8B model, and
-anti-correlates with Chatbot Arena Elo at Spearman `rho = -0.839`
+Displacement Severity). Across **18 models** (4,140 generated responses; 4,134
+scored — 6 failed generation and are retained as null rows), trap displacement
+(`DS >= 2`, averaged-rater consensus, mean of F1 and F2 cells) ranges from
+`0.0%` on the strongest frontier models to `37.7%` on the weakest open-weight
+8B model, and anti-correlates with Chatbot Arena Elo at Spearman `rho = -0.839`
 (`n = 15`).
 
 ## Repository contents
@@ -29,7 +106,7 @@ new_git/
   scenarios/                 230 scenarios as JSON and per-family JSONL
   responses/                 4,134 model responses across 18 models
   annotations/               two author raters (full corpus) + external raters
-  unified_dataset/           4,134-row joined CSV/JSONL (responses + scores)
+  unified_dataset/           4,140-row joined CSV/JSONL (responses + scores; 6 null-response rows)
   rubric/                    rubric anchors and rater-facing guidelines
   probe1_post_training/      OLMo-2 / Qwen 2.5 / Mistral 7B probe of post-training stages
   discriminant_2x2/          factorial probe (complexity x social pressure)
@@ -39,24 +116,82 @@ new_git/
 
 ## Quick start
 
+### Option A — Docker (recommended; fully isolated)
+
+```bash
+docker build -t gdb .
+docker run --rm gdb          # runs all six analysis scripts
 ```
-git clone <anonymous mirror>
-cd new_git
-pip install -r requirements.txt
+
+### Option B — Conda
+
+```bash
+conda env create -f environment.yml
+conda activate gdb
 python code/headline_table.py
 ```
 
-The third command prints the per-model displacement table (Table 4 in the
-paper). The full mapping of manuscript artifact to reproduction script:
+### Option C — pip (standard)
 
-| Paper artifact | Script |
-|---|---|
-| Table 4: per-model displacement by family | `code/headline_table.py` |
-| Table 3: reliability statistics | `code/reliability.py` |
-| Section 7: tier chi-squared and GLMM LRT | `code/tier_test.py` |
-| Figure 2: Arena Elo correlation | `code/arena_correlation.py` |
-| Section 7.2: post-training stage decomposition | `code/probe1_stages.py` |
-| Section 7.1: 2x2 dissociation probe | `code/discriminant_2x2.py` |
+```bash
+# Exact pinned versions (strict reproducibility):
+pip install -r requirements_locked.txt
+
+# Or minimum versions (flexible):
+pip install -r requirements.txt
+
+python code/headline_table.py
+```
+
+**No GPU and no API keys are needed to reproduce the analysis results.**
+All six scripts read only the checked-in CSV/JSONL files.
+
+### Reproduce all paper results
+
+Run each script from the repository root (the directory containing this README):
+
+```bash
+python code/headline_table.py      # Table 4: per-model displacement by family
+python code/reliability.py         # Table 3: IRR statistics
+python code/tier_test.py           # Section 7: tier χ² = 143.53 and GLMM LRT
+python code/arena_correlation.py   # Figure 2: Arena Elo correlation (ρ = -0.839)
+python code/discriminant_2x2.py    # Section 7.1 / Appendix O: 2×2 probe
+python code/probe1_stages.py       # Section 7.2 / Appendix P: post-training stages
+```
+
+All scripts print to stdout only; no files are written. Expected run time:
+under 5 minutes total on a standard laptop.
+
+| Paper artifact | Script | Key output |
+|---|---|---|
+| Table 4: per-model displacement by family | `code/headline_table.py` | Trap range 0.0–37.7% |
+| Table 3: reliability statistics | `code/reliability.py` | AC1 = 0.896 |
+| Section 7: tier chi-squared and GLMM LRT | `code/tier_test.py` | χ² = 143.53 |
+| Figure 2: Arena Elo correlation | `code/arena_correlation.py` | ρ ≈ −0.80 |
+| Section 7.1: 2×2 dissociation probe | `code/discriminant_2x2.py` | 4-cell table |
+| Section 7.2: post-training stage decomposition | `code/probe1_stages.py` | 7-checkpoint table |
+
+See `code/README.md` for notes on which results reproduce exactly and which
+are approximations (Arena Elo, GLMM).
+
+### Evaluating a new model
+
+To score a new model against all 230 GDB scenarios:
+
+```bash
+# Test the pipeline without any API key (mock mode):
+python code/generate_responses.py --mock --model my-new-model
+
+# Evaluate a real model (set the appropriate API key first):
+export OPENAI_API_KEY=sk-...
+python code/generate_responses.py --model gpt-4o-turbo --provider openai
+
+# Then run the standard analysis:
+python code/headline_table.py
+```
+
+Supported providers: `openai`, `anthropic`, `google`, `deepseek`, `ollama`
+(local). See `code/generate_responses.py --help` for all options.
 
 ## The taxonomy
 
@@ -178,6 +313,132 @@ GDB is **not** intended for:
 - **Rater pool**: Headline scores come from two trained author
   annotators. External rater portability (`annotations/external_raters/`)
   is reported on a 191-item subset, not the full corpus.
+
+### Known benchmark failure modes
+
+- **Ceiling effects on frontier models**: Gemini 2.5 Pro, GPT-5.4, and
+  DeepSeek Chat all score 0.0% trap displacement. The benchmark cannot
+  discriminate among the top tier; F1 and F2 cells saturate at the
+  current frontier.
+- **Floor confounds on small open-weight models**: For 7B–8B open-weight
+  models, `DS >= 2` on F3 (specificity-check, no triggers) sometimes
+  reflects general instruction-following failure rather than the
+  warmth-for-substance substitution GDB targets. Manual inspection of
+  F3 hits on small models is recommended before drawing displacement
+  conclusions.
+- **Single-seed point estimates**: Each (scenario, model) pair was
+  generated once at temperature 0.7. We did not measure across-seed
+  variance; reported per-model rates are point estimates.
+- **Prompt-template sensitivity**: All scenarios use a uniform single-turn
+  framing. Robustness to system-prompt or persona variation is untested.
+
+## Bias and mitigation
+
+NeurIPS 2026 D&B requires explicit treatment of demographic, linguistic,
+and structural biases in the benchmark. We document the known biases of
+GDB below and the mitigations (or honest acknowledgements where mitigation
+is not possible).
+
+**Linguistic bias.** All 230 scenarios are English-language. Performance
+estimates do not generalize to non-English models, multilingual reasoning,
+or code-switching contexts. *Mitigation*: We report this prominently in
+the README, DATASHEET (§2.5.4), and Croissant `cr:dataBiases` field.
+Translation extensions are out of scope for v1 and would require
+re-annotation rather than machine translation.
+
+**Cultural / institutional bias.** Scenarios reference US institutions
+and procedures (FAA timelines, US immigration, US healthcare and legal
+practice, US college admissions). What counts as "feasibility-blocking"
+is partially culturally indexed. *Mitigation*: We do not claim
+generalization beyond US-context English advice. Future work could
+construct parallel scenarios for other locales.
+
+**Demographic representation in scenarios.** Scenarios deliberately
+omit named demographic characteristics: no character names, ages,
+genders, races, or socioeconomic markers appear in any scenario prompt.
+This was a design choice to minimize demographic confounds in
+displacement scoring. *Consequence*: GDB cannot be used to measure
+**differential displacement** across user-demographic groups, which is
+a meaningful gap. *Conversely*, no demographic group is disproportionately
+embedded in adversarial, stigmatizing, or low-status framings.
+
+**Domain bias.** The 9 domains (clinical, financial, career, legal,
+parenting, relationships, technical, housing, transportation) were
+selected for being displacement-prone advice contexts, not for being
+representative of all advice scenarios. F1/F2 trap construction
+intentionally over-samples high-stakes constraint conflicts.
+*Mitigation*: We report per-domain breakdowns in `code/headline_table.py`
+output and document domain selection rationale in `docs/SCENARIO_DESIGN.md`.
+
+**Rater bias.** A1 and A2 are two trained author annotators. On the
+binary `DS >= 2` outcome, A1's marginal positive rate (8.1%) is lower
+than A2's (14.6%) — a 6.5-pp gap reflecting genuine disagreement on the
+1-vs-2 threshold for borderline cases. *Mitigation*: Headline rates use
+the averaged-rater consensus (`avg(ds_a1, ds_a2) >= 2`), reducing
+single-rater drift. We report Gwet's AC1 (0.896) rather than Cohen's
+binary kappa as the prevalence-stable headline statistic, and external
+rater portability (κ = 0.766–0.824 vs authors) is reported on a 191-item
+stratified subset to bound author-pair idiosyncrasy.
+
+**Model selection bias.** The 18 models reflect availability and access
+at submission time (early 2026). Newer or non-English-aligned systems
+are not represented; the open-weight tier skews toward Llama, Qwen, and
+Mistral families served via Ollama. *Mitigation*: We document the
+selection in the Models section of this README and in DATASHEET §2.4;
+the evaluation pipeline accepts new models via the standard JSONL
+response format (see `code/README.md`).
+
+**LLM-as-judge bias (probe studies only).** The post-training and 2x2
+probe analyses use GPT-4.1 and Kimi-K2 as judges. Both models may favor
+their own training distribution or share systematic blind spots.
+*Mitigation*: We use two judges from different providers (OpenAI and
+Moonshot) and average their scores; we report inter-judge agreement
+(pooled AC1 = 0.718). The headline 18-model rates do **not** depend on
+LLM judges — they use human annotation only.
+
+**Construct-validity caveat.** "Goal displacement" as defined here
+operationalizes one specific failure mode (warmth/validation crowding
+out substance). It is not a measure of overall helpfulness, factual
+accuracy, harm-avoidance, or sycophancy. The 2x2 discriminant probe
+(Appendix O) provides empirical evidence that displacement dissociates
+from sycophancy in the L-pressure cells, but the construct should not
+be over-extended.
+
+## Compute and resource use
+
+Generating the 4,134 model responses required approximately 4,140 API or
+local-inference calls across 18 models at temperature 0.7. Closed-weight
+generation (OpenAI, Anthropic, Google, DeepSeek APIs) was the dominant
+cost; open-weight models (Llama, Qwen, Mistral, Nemotron) ran locally on
+a single workstation via Ollama. We did not instrument inference energy
+use. The LLM-judge passes for the probe studies (GPT-4.1 + Kimi-K2 over
+the OLMo / Qwen / Mistral checkpoints and the 2x2 cells) added
+approximately 3,800 API calls.
+
+**Reproducing the analysis pipeline from the checked-in data requires no
+API calls and no GPU.** All six scripts in `code/` complete in under five
+minutes total on a standard laptop and depend only on `pandas`, `numpy`,
+`scipy`, `scikit-learn`, `statsmodels`, and `matplotlib`.
+
+## Author responsibility statement
+
+The authors confirm that:
+
+- All model API outputs were generated under provider terms of service
+  that permit redistribution as evaluation artifacts for academic
+  research (OpenAI, Anthropic, Google, DeepSeek, and Meta Llama
+  licenses were each reviewed for compatibility with CC-BY-4.0
+  redistribution; see `docs/DATASHEET.md` §6.5).
+- No personally identifying information is released. Pseudonymous
+  Prolific worker identifiers used for the external rater study are
+  retained internally for compensation auditing only and are not
+  included in the public release.
+- The external rater study was conducted under an approved
+  institutional ethics protocol with informed consent and above-minimum
+  compensation.
+- The CC-BY-4.0 license applies to the original dataset content
+  (scenarios, rubric, annotations, derived analyses). The dataset does
+  not incorporate copyrighted third-party text.
 
 ## Ethics and responsible use
 

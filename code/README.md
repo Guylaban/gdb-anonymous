@@ -28,30 +28,65 @@ repository.
 
 ## Usage
 
-```
-python headline_table.py
-python reliability.py
-python tier_test.py
-python arena_correlation.py
-python probe1_stages.py
-python discriminant_2x2.py
+Run from the **repository root** (the directory containing `README.md`):
+
+```bash
+python code/headline_table.py
+python code/reliability.py
+python code/tier_test.py
+python code/arena_correlation.py
+python code/probe1_stages.py
+python code/discriminant_2x2.py
 ```
 
-Each script prints to stdout only. There are no file outputs. Scripts
-that need shared utilities import them from `headline_table.py` or
-`_paths.py`.
+Each script prints to stdout only; no files are written. Scripts share
+utilities via `headline_table.py` and `_paths.py` (all paths repo-relative).
+
+### Evaluating a new model
+
+`generate_responses.py` generates responses for any new model and writes
+a JSONL file compatible with the standard analysis pipeline:
+
+```bash
+# No API key needed — mock mode for pipeline verification:
+python code/generate_responses.py --mock --model test-model
+
+# Real evaluation (set API key env var first):
+python code/generate_responses.py --model gpt-4o --provider openai
+
+# See all options:
+python code/generate_responses.py --help
+```
 
 ## Notes on numerical reproducibility
 
-Small numerical differences from the printed paper values (typically
-within 0.1 pp) are expected and arise from floating-point aggregation
-order or judge non-determinism at temperature 0. The Arena Elo values
-in `arena_correlation.py` are paper-time approximations; users may
-update the dict with current values without changing the rest of the
-pipeline.
+### Exact reproductions
+`headline_table.py`, `reliability.py`, and `discriminant_2x2.py` reproduce
+paper values exactly (within floating-point rounding) from the checked-in
+data. The tier chi-squared in `tier_test.py` (χ² = 143.53) also reproduces
+exactly.
 
-The mixed-effects model in `tier_test.py` will use a binomial GLMM if
-`statsmodels.genmod.bayes_mixed_glm.BinomialBayesMixedGLM` is available
-and converges; otherwise it falls back to a logistic regression with
-cluster-robust standard errors clustered on `scenario_id` and prints a
-notice. Both paths report a chi-squared statistic, df, and p-value.
+### Approximate reproductions
+
+**Arena Elo (`arena_correlation.py`)**: The Elo scores hardcoded in the
+script are paper-time snapshots from early 2026. Chatbot Arena Elo values
+drift as new battles are collected; current values will differ. The paper
+reports ρ = -0.839 (n=15). Running the script today may produce a slightly
+different ρ because the underlying Elo inputs have changed. To reproduce
+the paper exactly, use the Elo values stored in the script as-is (do not
+update them). The script prints a reminder to this effect.
+
+**GLMM LRT (`tier_test.py`)**: The paper's GLMM result (likelihood-ratio
+test for tier in a mixed-effects logistic model with random intercepts per
+`scenario_id`) was computed with `statsmodels 0.14`. The script uses
+`BinomialBayesMixedGLM` when available and reports the same LRT statistic.
+If the GLMM fails to converge (can happen with older statsmodels), the
+script falls back to a logistic regression with cluster-robust standard
+errors and prints a **FALLBACK** notice. The fallback test statistic will
+differ from the paper; the tier effect and its significance will not.
+
+**Probe studies (`probe1_stages.py`)**: The LLM-judge calls that produced
+the probe scores are pre-computed and checked in; the script reads those
+files rather than calling GPT-4.1 or Kimi-K2. Numeric values reproduce
+exactly. If judge models are updated externally, re-running generation
+would produce different judge scores.
